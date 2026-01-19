@@ -30,7 +30,7 @@ pub enum ShellErrorResponse {
 }
 
 pub enum OkFlavorResponse {
-    FlavorDefaul,
+    FlavorDefault,
     FlavorIpConfigAttempt,
     FlavorPingAttempt,
 }
@@ -59,19 +59,27 @@ pub enum MiscFlavor {
     FlavorUserReply1,
 }
 
+const HELP_MENU: &str = r#"
+    You are too greedy.
+    ---------------
+     1. tellme                      ->    List Commands
+     2. mayileave                   ->    Exit the Terminal
+     3. iamhere                     ->    Locate current Directory
+     4. mommy?                      ->    List Files in current Directory
+     5. walkwithme <filename>       ->    Move to another Directory
+     6. goback                      ->    Return to Previous Directory
+     7. canihave <filename>         ->    Create File
+     8. takethe <filename>          ->    Delete File
+     9. letusplayhouse <directory>  ->    Create a Directory
+    10. removethehouse <directory>  ->    Delete a Directory
+    11. openthis <filename>         ->    Open the File
+    12. readthis <filename>         ->    Read the File's contents
+    13. doxxme                      ->    Windows Ip Configuration
+    14. callmeplease <ip/dns>       ->    Ping device
+    ---------------
+    "#;
 
-/*
-   ErrorGeneral,
-    ErrorBadArgs,
-    ErrorTooManyArgs,
-    ErrorSystem,
-    ErrorFileDoesNotExist,
-    ErrorPermissionDenied,
-    ErrorRootDirectory,
-    ErrorListedFilesDoesNotExist,
-    ErrorProcessDoesNotExist,
-    ErrorIncompleteLaunchProcess,
- */
+
 impl fmt::Display for ShellErrorResponse {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result{
         match self{
@@ -82,7 +90,7 @@ impl fmt::Display for ShellErrorResponse {
             Self::ErrorFileDoesNotExist => write!(f, "You are not allowed to do that sweetie?"),
             Self::ErrorPermissionDenied => write!(f, "This is as far as we can go sweetie."),
             Self::ErrorRootDirectory => write!(f, "Hmmm, no one is here, only your mommy right?."),
-            Self::ErrorListedFilesDoesNotExist => write!(f, "What kind of action you want me to do sweetie? Say it properly."),
+            Self::ErrorListedFilesDoesNotExist => write!(f, "Hmmm, no one is here, only your mommy right?."),
             Self::ErrorProcessDoesNotExist => write!(f, "What kind of action you want me to do sweetie? Say it properly."),
             Self::ErrorIncompleteLaunchProcess => write!(f, "I can't do it properly if you won't say clearly what you desire sweetie."),
 
@@ -135,7 +143,38 @@ fn shell_start_default(mut input: String){
         io::stdout().flush().unwrap(); // This exists because without this, the ">" will not show up and get stuck.
         io::stdin().read_line(&mut input).expect(&ShellErrorResponse::ErrorGeneral.to_string());
 
-        
+        shell_attempt_command(&input)
 
     }
+}
+
+fn shell_attempt_command(input: &str){
+   let clean_input = input.trim();
+
+    match clean_input{
+        "tellme" => shell_help(),
+        "mayileave" => std::process::exit(0),
+        "iamhere" => shell_get_directory(),
+        "mommy?" => shell_list_files_in_directory(),
+        _ => println!("{}", ShellErrorResponse::ErrorGeneral),
+    }
+
+}
+
+fn shell_list_files_in_directory(){
+    let files = std::fs::read_dir(".").expect(&ShellErrorResponse::ErrorListedFilesDoesNotExist.to_string());
+
+    for entry in files{
+        let entry = entry.expect(&ShellErrorResponse::ErrorPermissionDenied.to_string());
+        println!("{}", entry.path().display());
+    }
+}
+
+fn shell_get_directory(){
+    let dir = std::env::current_dir().expect(&ShellErrorResponse::ErrorRootDirectory.to_string());
+    println!("{}", dir.display());
+
+}
+fn shell_help(){
+    println!("{}", HELP_MENU);
 }
