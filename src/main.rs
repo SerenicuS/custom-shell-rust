@@ -1,3 +1,4 @@
+use std::env::set_current_dir;
 use std::fmt;
 use std::io;
 use std::io::Write;
@@ -27,6 +28,7 @@ pub enum ShellErrorResponse {
     ErrorListedFilesDoesNotExist,
     ErrorProcessDoesNotExist,
     ErrorIncompleteLaunchProcess,
+    ErrorDirectoryDoesNotExist,
 }
 
 pub enum OkFlavorResponse {
@@ -93,6 +95,7 @@ impl fmt::Display for ShellErrorResponse {
             Self::ErrorListedFilesDoesNotExist => write!(f, "Hmmm, no one is here, only your mommy right?."),
             Self::ErrorProcessDoesNotExist => write!(f, "What kind of action you want me to do sweetie? Say it properly."),
             Self::ErrorIncompleteLaunchProcess => write!(f, "I can't do it properly if you won't say clearly what you desire sweetie."),
+            Self::ErrorDirectoryDoesNotExist => write!(f, "I cannot find the house sweetie."),
 
         }
     }
@@ -149,13 +152,29 @@ fn shell_start_default(mut input: String){
 }
 
 fn shell_attempt_command(input: &str){
-   let clean_input = input.trim();
+    let clean_input = input.trim();
+    let args: Vec<&str> = clean_input.split_whitespace().collect();
 
-    match clean_input{
+    if args.is_empty(){
+        println!("{}", ShellErrorResponse::ErrorBadArgs);
+        return;
+    }
+
+
+    match args[0]{
         "tellme" => shell_help(),
         "mayileave" => std::process::exit(0),
         "iamhere" => shell_get_directory(),
         "mommy?" => shell_list_files_in_directory(),
+        "walkwithme" => {
+            if args.len() > 1 {
+                shell_move_directory(&args[1])
+            }
+            else{
+                println!("{}", ShellErrorResponse::ErrorBadArgs);
+            };
+        }
+
         _ => println!("{}", ShellErrorResponse::ErrorGeneral),
     }
 
@@ -169,12 +188,26 @@ fn shell_list_files_in_directory(){
         println!("{}", entry.path().display());
     }
 }
-
 fn shell_get_directory(){
     let dir = std::env::current_dir().expect(&ShellErrorResponse::ErrorRootDirectory.to_string());
     println!("{}", dir.display());
 
 }
+
+
+fn shell_get_directory_return() -> String{
+    let dir = std::env::current_dir().expect(&ShellErrorResponse::ErrorRootDirectory.to_string());
+
+    dir.display().to_string()
+
+}
 fn shell_help(){
     println!("{}", HELP_MENU);
+}
+
+fn shell_move_directory(path: &str){
+    match set_current_dir(path){
+        Ok(_) => println!("Moved Inside: {}", shell_get_directory_return()),
+        Err(_) => println!("{}", ShellErrorResponse::ErrorSystem),
+    }
 }
