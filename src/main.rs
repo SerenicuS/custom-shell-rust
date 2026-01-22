@@ -119,6 +119,27 @@ impl fmt::Display for GeneralFlavorResponse {
     }
 }
 
+impl fmt::Display for ShellOkResponse {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result{
+        match self{
+
+            Self::OkGeneral => write!(f, "It was successful sweetie."),
+            Self::OkDeleteFile => write!(f, "You don't like this? Fine, I will have it."),
+            Self::OkCreateFile => write!(f, "Here sweetie, please take care of it."),
+            Self::OkReturnDirectory => write!(f, "Be careful sweetie."),
+            Self::OkListedFiles => write!(f, "You don't trust your mommy?..."),
+            Self::OkMoveDirectory => write!(f, "We are here now, do you like it?"),
+            Self::OkTerminate => write!(f, "Talk to you later sweetie."),
+            Self::OkCreateDirectory => write!(f, "Oh, you want to play house with me sweetie?"),
+            Self::OkDeleteDirectory => write!(f, "You don't have to do that, we can just create more house."),
+            Self::OkReadFile => write!(f, "Do you like the contents of the file sweetie?"),
+            Self::OkOpenedFile => write!(f, "Write what is important for you, sweet boy."),
+            Self::OkLaunchProcess => write!(f, "Are you satisfied sweetie?."),
+
+        }
+    }
+}
+
 
 fn main() {
     println!("{}", GeneralFlavorResponse::FlavorMenu1);
@@ -166,20 +187,33 @@ fn shell_attempt_command(input: &str){
         "mayileave" => std::process::exit(0),
         "iamhere" => shell_get_directory(),
         "mommy?" => shell_list_files_in_directory(),
-        "walkwithme" => {
-            if args.len() > 1 {
-                shell_move_directory(&args[1])
-            }
-            else{
-                println!("{}", ShellErrorResponse::ErrorBadArgs);
-            };
-        }
-
+        "walkwithme" if check_args_len(&args) => shell_move_directory(args[1]),
+        "canihave" if check_args_len(&args) => shell_create_file(args[1]),
+        "takethe" if check_args_len(&args) => shell_delete_file(args[1]),
         _ => println!("{}", ShellErrorResponse::ErrorGeneral),
     }
 
 }
 
+
+fn check_args_len(args: &Vec<&str>) -> bool{
+    args.len() > 1
+}
+
+
+fn shell_create_file(file_name: &str){
+  match std::fs::File::create(file_name){
+      Ok(_) => println!("{}", ShellOkResponse::OkCreateFile),
+      Err(_) => println!("{}", ShellErrorResponse::ErrorPermissionDenied)
+  }
+}
+
+fn shell_delete_file(file_name: &str){
+    match std::fs::remove_file(file_name){
+        Ok(_) => println!("{}", ShellOkResponse::OkDeleteFile),
+        Err(_) => println!("{}", ShellErrorResponse::ErrorPermissionDenied)
+    }
+}
 fn shell_list_files_in_directory(){
     let files = std::fs::read_dir(".").expect(&ShellErrorResponse::ErrorListedFilesDoesNotExist.to_string());
 
