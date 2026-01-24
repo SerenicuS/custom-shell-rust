@@ -2,6 +2,8 @@ use std::env::set_current_dir;
 use std::fmt;
 use std::io;
 use std::io::Write;
+use std::process::Command;
+
 pub enum ShellOkResponse {
     OkGeneral,
     OkDeleteFile,
@@ -32,15 +34,14 @@ pub enum ShellErrorResponse {
 }
 
 pub enum OkFlavorResponse {
-    FlavorDefault,
     FlavorIpConfigAttempt,
     FlavorPingAttempt,
 }
 
 pub enum BadFlavorResponse {
-    FlavorUserZero,
-    FlavorUserSimilar,
-    FlavorUserWrong,
+    FlavorWindowsCallFail,
+    FlavorWindowsCommandFail,
+    FlavorWindowsConsoleFail,
 }
 
 pub enum GeneralFlavorResponse {
@@ -81,6 +82,27 @@ const HELP_MENU: &str = r#"
     ---------------
     "#;
 
+
+impl fmt::Display for OkFlavorResponse {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result{
+        match self{
+            Self::FlavorIpConfigAttempt => write!(f, "{}", "Do not tell others about our location sweetie, you only need to rely on me."),
+            Self::FlavorPingAttempt => write!(f, "{}", "Are you calling someone sweetie? You do know that we only rely on each other."),
+
+
+        }
+    }
+}
+
+impl fmt::Display for BadFlavorResponse {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result{
+        match self{
+            Self::FlavorWindowsCallFail => write!(f, "{}", "Your friend did not respond to your calls?"),
+            Self::FlavorWindowsCommandFail => write!(f, "{}", "Your friend did not like how you commanded him. You want to make him obey?"),
+            Self::FlavorWindowsConsoleFail => write!(f, "{}", "Your friend cannot write because i broke his fingers, sorry sweetie."),
+        }
+    }
+}
 
 impl fmt::Display for ShellErrorResponse {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result{
@@ -190,6 +212,8 @@ fn shell_attempt_command(input: &str){
         "walkwithme" if check_args_len(&args) => shell_move_directory(args[1]),
         "canihave" if check_args_len(&args) => shell_create_file(args[1]),
         "takethe" if check_args_len(&args) => shell_delete_file(args[1]),
+
+        "doxxme" => shell_windows_call(args[0]),
         _ => println!("{}", ShellErrorResponse::ErrorGeneral),
     }
 
@@ -243,5 +267,40 @@ fn shell_move_directory(path: &str){
     match set_current_dir(path){
         Ok(_) => println!("Moved Inside: {}", shell_get_directory_return()),
         Err(_) => println!("{}", ShellErrorResponse::ErrorSystem),
+    }
+}
+
+
+
+
+/*
+
+    WINDOWS COMMANDS
+ */
+
+
+
+fn shell_windows_call(windows_command: &str){
+    match windows_command{
+        "doxxme" => windows_command_run("ipconfig"),
+        _ => println!("{}", BadFlavorResponse::FlavorWindowsCallFail),
+    }
+}
+
+fn windows_command_run(var: &str){
+    match var{
+        "ipconfig" => windows_command_console_output(&var),
+        _ => println!("{}", BadFlavorResponse::FlavorWindowsCommandFail),
+    }
+}
+
+
+fn windows_command_console_output(var: &str){
+    match Command::new(var).output(){
+        Ok(output) => {
+            let console_output = String::from_utf8_lossy(&output.stdout);
+            println!("{}", console_output);
+        }
+        Err(_) => println!("{}", BadFlavorResponse::FlavorWindowsCommandFail),
     }
 }
