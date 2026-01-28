@@ -168,15 +168,18 @@ fn main() {
     println!("{}", GeneralFlavorResponse::FlavorMenu2);
     println!("{}", GeneralFlavorResponse::FlavorMenu3);
 
-    let mut input = String::new();// lineBuffer
-    println!();
-    io::stdin().read_line(&mut input).expect(&GeneralFlavorResponse::FlavorExit.to_string());
+    loop{
 
-    match input.trim(){
-        "Y" => shell_start_default(input),
-        _ => println!("{}", GeneralFlavorResponse::FlavorExit),
+        let mut input = String::new();// lineBuffer
+        println!();
+        io::stdin().read_line(&mut input).expect(&GeneralFlavorResponse::FlavorExit.to_string());
+
+        match input.trim(){
+            "Y" => shell_start_default(input),
+            "N" => std::process::exit(0),
+            _ => println!("{}", ShellErrorResponse::ErrorGeneral),
+        }
     }
-
 
 }
 
@@ -205,18 +208,29 @@ fn shell_attempt_command(input: &str){
 
 
     match args[0]{
+        //1 Args
         "tellme" => shell_help(),
         "mayileave" => std::process::exit(0),
         "iamhere" => shell_get_directory(),
         "mommy?" => shell_list_files_in_directory(),
+        "doxxme" => shell_windows_call("ipconfig"),
+
+
+        // 2 Args
         "walkwithme" if check_args_len(&args) => shell_move_directory(args[1]),
         "canihave" if check_args_len(&args) => shell_create_file(args[1]),
         "takethe" if check_args_len(&args) => shell_delete_file(args[1]),
-
-        "doxxme" => shell_windows_call(args[0]),
+        "openthis" if check_args_len(&args) => shell_open_file(args[1]),
         _ => println!("{}", ShellErrorResponse::ErrorGeneral),
     }
 
+}
+
+fn shell_open_file(file_name: &str){
+    match Command::new("cmd").args(&["/C", "start", file_name]).output(){
+        Ok(_) => println!("{}", ShellOkResponse::OkOpenedFile),
+        Err(_) => println!("{}", ShellErrorResponse::ErrorFileDoesNotExist),
+    }
 }
 
 
@@ -235,7 +249,7 @@ fn shell_create_file(file_name: &str){
 fn shell_delete_file(file_name: &str){
     match std::fs::remove_file(file_name){
         Ok(_) => println!("{}", ShellOkResponse::OkDeleteFile),
-        Err(_) => println!("{}", ShellErrorResponse::ErrorPermissionDenied)
+        Err(_) => println!("{}", ShellErrorResponse::ErrorFileDoesNotExist)
     }
 }
 fn shell_list_files_in_directory(){
@@ -282,18 +296,10 @@ fn shell_move_directory(path: &str){
 
 fn shell_windows_call(windows_command: &str){
     match windows_command{
-        "doxxme" => windows_command_run("ipconfig"),
+        "ipconfig" => windows_command_console_output(windows_command),
         _ => println!("{}", BadFlavorResponse::FlavorWindowsCallFail),
     }
 }
-
-fn windows_command_run(var: &str){
-    match var{
-        "ipconfig" => windows_command_console_output(&var),
-        _ => println!("{}", BadFlavorResponse::FlavorWindowsCommandFail),
-    }
-}
-
 
 fn windows_command_console_output(var: &str){
     match Command::new(var).output(){
