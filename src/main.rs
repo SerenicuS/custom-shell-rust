@@ -214,6 +214,7 @@ fn shell_attempt_command(input: &str){
         "iamhere" => shell_get_directory(),
         "mommy?" => shell_list_files_in_directory(),
         "doxxme" => shell_windows_call("ipconfig"),
+        "goback" => shell_return_to_prev_directory(),
 
 
         // 2 Args
@@ -230,6 +231,15 @@ fn shell_open_file(file_name: &str){
     match Command::new("cmd").args(&["/C", "start", file_name]).output(){
         Ok(_) => println!("{}", ShellOkResponse::OkOpenedFile),
         Err(_) => println!("{}", ShellErrorResponse::ErrorFileDoesNotExist),
+    }
+}
+
+fn shell_return_to_prev_directory(){
+
+
+    match set_current_dir(".."){
+        Ok(_) => println!("{}", ShellOkResponse::OkReturnDirectory),
+        Err(_) => println!("{}", ShellErrorResponse::ErrorRootDirectory),
     }
 }
 
